@@ -1,0 +1,156 @@
+MongoDB یک پایگاه داده (Database) NoSQL و متن‌باز (Open Source) هست که برای ذخیره‌سازی و مدیریت داده‌ها طراحی شده. برخلاف پایگاه داده‌های رابطه‌ای (مثل MySQL یا PostgreSQL) که داده‌ها رو داخل جدول‌ها و سطر و ستون ذخیره می‌کنن، MongoDB داده‌ها رو به صورت سند (Document) در قالب JSON (یا در عمل BSON، یعنی Binary JSON) نگهداری می‌کنه.
+
+ویژگی‌های اصلی MongoDB:
+مدل سندی (Document-Oriented): داده‌ها به شکل JSON ذخیره می‌شن، یعنی می‌تونی ساختارهای تو در تو و پویا داشته باشی.
+
+بدون اسکیمای سخت (Schema-less): لازم نیست از قبل نوع و ساختار داده‌ها رو دقیق مشخص کنی، انعطاف بیشتری داره.
+
+مقیاس‌پذیری (Scalability): به راحتی می‌شه روی سرورهای متعدد توزیع کرد (Sharding).
+
+کارایی بالا (High Performance): به دلیل استفاده از ذخیره‌سازی سندی و ایندکس‌گذاری‌های متنوع، سرعت بالایی داره.
+
+مناسب برای داده‌های حجیم (Big Data): در پروژه‌هایی با داده‌های زیاد یا متنوع، خیلی خوب جواب می‌ده.
+
+کاربردها:
+اپلیکیشن‌های وب و موبایل که داده‌های پویا دارن.
+
+ذخیره‌سازی لاگ‌ها و داده‌های حجیم.
+
+سیستم‌های real-time (مثلاً چت یا مانیتورینگ).
+
+پروژه‌هایی که داده‌ها ساختار ثابتی ندارن.
+
+مثال یک سند (Document) در MongoDB:
+
+{
+  "name": "Ali",
+  "age": 25,
+  "skills": ["Node.js", "React", "MongoDB"],
+  "address": {
+    "city": "Tehran",
+    "postalCode": 12345
+  }
+}
+
+
+1.مفاهیم پایه
+
+Database:مجموعه ای از داده ها
+Collection:شبیه جدول ولی شامل document
+Document:رکورد داده به شکل JSON(BSON)
+
+2.دستورات پایه
+
+2_1:   ساخت Database : 
+use (نام database)
+
+2_2:ساخت یک collection و افزودن سند:
+db.users.insertOne({name:"Ali",age:24})
+
+2_3:اضافه کردن چند سند:
+db.users.insertmany([{name:"Ali",age:32},{name:"reza",age:68}])
+
+2_3آپدیت یک سند:
+db.users.updateOne({name:"Ali"},{$set:{age:26}})
+
+2_4 بروزرسانی چند سند:
+db.users.updateMany({age:{$lt:25}},{$set:{isYounger:true}})
+
+2_5 جایگزینی کامل سند
+db.users.replaceOne({name:"Sara"},{name:"Sara",age:24})
+سند قبلی را حذف و سند جدید را جایگزین آن می کند.
+
+2_6 حذف یک سند
+db.users.deleteOne({name:"Ali"})
+
+2_7 حذف چند سند
+db.users.deleteMany({age:{$gt:30}})
+
+2_8 حذف یک کالکشن
+db.users.deleteMany({})
+
+2_9 عملگر های مقایسه ای 
+1.(Equal)
+{ age: { $eq: 25 } } → کسانی که age = 25 دارن
+
+2.(Not equal)
+{ age: { $ne: 25 } } → کسانی که age ≠ 25
+
+3.(Greater than)
+{ age: { $gt: 25 } } → سن بالاتر از ۲۵
+
+4.(Less than)
+{ age: { $lt: 30 } }
+
+5.(Greater than or equal)
+{ age: { $gte: 25 } }
+
+6.(Less than or equal)
+{ age: { $lte: 30 } }
+
+
+
+3 استفاده از MongoDb و عملیات CRUD
+
+
+3_1 نصب MongoDb.Driver
+
+
+3_2 ساخت مدل
+public class User
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
+
+        [BsonElement("name")]
+        public string Name { get; set; }
+
+        [BsonElement("age")]
+        public int Age { get; set; }
+    }
+3_3 ساخت سرویس 
+private readonly IMongoCollection<User> _users;
+
+        public UserService()
+        {
+            var client = new MongoClient("mongodb://localhost:27017");
+            var database = client.GetDatabase("MyDatabase");
+            _users = database.GetCollection<User>("Users");
+        }
+
+3_4 عملیات CRUD
+
+1.خواندن همه اطلاعات 
+public List<User> GetAllUser()
+{
+var users=_user.Find(u=true).toList();
+return users;
+}
+
+2.خواندن اطلاعات با شرط
+public User GetUserById(string Id)
+{
+var user=_user.Find(u=>u.Id==id).FirstOrDefault();
+}
+
+3.اضافه کردن داده
+public User Add(User user)
+{
+_user.InsertOne(user);
+return user;
+}
+
+4.بروزرسانی داده
+public bool UpdateUser(string id,User use)
+{
+_user.replaceOne(u=>u.Id==id,user);
+return true;
+}
+
+5.حذف داده 
+public bool DeleteUser(string id)
+{
+_user.deleteOne(u=>u.Id==id);
+}
+

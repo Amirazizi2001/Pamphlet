@@ -1,0 +1,81 @@
+1.choose all data from a table
+SELECT*FROM Employees
+
+2.Create a new table
+CREATE TABLE Employees(
+    Id INT PRIMARY KEY IDENTITY(1000,1),
+	Fullname NVARCHAR(50),
+	Department NVARCHAR(30),
+	Salary INT,
+	HireDate DATE
+)
+
+3.Insert data into table
+INSERT INTO Employess (Fullname,Department,Salary,HireDate)
+VALUES
+('Amir Azizi','Aerospace',20000000,'2001-06-23')
+
+4.choose by condition
+SELECT *FROM Employees WHERE Department='Aerospace'
+
+5.order and choose specific
+SELECT * FROM Employees ORDER BY Salary
+DESC DESCENDING | ASC ASCEMDING
+
+6.exhibit specific content
+SELECT Fullname,Salary FROM Employees ORDER BY Salary DESC
+
+7.Aggregate function
+SELECT AVG(Salary) AS AverageSalary FROM Employees
+
+SELECT Department,Count(*) AS Depcount FROM Emolyees
+GROUP BY Department
+
+8.Delete data from table
+ 8.1.Delete a specific content
+DELETE FROM Employees WHERE Id=1001
+
+ 8.2.Delete all content with one identical feature
+DELETE FROM Employees WHERE Department='Aerospce'
+
+ 8.3.DELETE TABLE(USE WITH CAUTION)
+DELETE FROM Employees
+
+9.Update data
+UPDATE Employees SET Salary=45000000 WHERE Id=1000
+
+10.Join between tables
+ 10.1.Innerjoin
+
+SELECT e.Fullname,e.Salary,e.HireDate,d.DeptName FROM Employees AS e
+JOIN Department AS d ON e.DepId=d.DeptId
+
+  10.2.Left Join
+SELECT e.Fullname,e.Salary,e.HireDate,d.DeptName FROM Employees AS e
+LEFT JOIN Department AS d ON e.DepId=d.DeptId
+
+  10.3.Right Join
+SELECT e.Fullname,e.Salary,e.HireDate,d.DeptName FROM Employees AS e
+RIGHT JOIN Department AS d ON e.DepId=d.DeptId
+
+11.Subquery
+
+SELECT *FROM Employees 
+WHERE Salary<(SELECT AVG(Salary) FROM Employees)
+
+12.Try Catch
+
+BEGIN TRY
+ BEGIN TRANSACTION
+
+ UPDATE Employees
+ SET Salary=Salary+1000000
+ WHERE DepId=9
+ COMMIT
+ END TRY
+ BEGIN CATCH 
+  ROLLBACK
+  PRINT 'THERE IS ANN ERROR'+ERROR_MESSAGE()
+  END CATCH
+
+
