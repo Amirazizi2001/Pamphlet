@@ -1,0 +1,122 @@
+1.Dapper چیست؟
+یک micro ORM است که توسط شرکت StackOverFlow ساخته شده است.
+ORM ابزاری است که بین دیتابیس و کد C# ارتباط برقرار می کند
+Dapper خیلی سبک و سریع طراحی شده است و فقط کار اصلیش رو انجام میده:
+1.اجرای Query ها      2.Map کردن داده های دیتابیس به  Object های c#
+
+2.چرا از  Dapper استفاده می کنیم؟
+خیلی سریع تر از ORM های سنگینی مثل Entity Framework عمل میکنه
+پیچیدگی نداره Query های خودت رو می نویسی
+خروجی مستقیم رو به مدل هات (Class) Map می کنه
+کنترل کامل روی SQL داری.
+
+3.ایجاد پروِژه 
+
+3_1 :نصب Package ها
+1.ِDapper  2.System.Data.Sqlclient
+
+3_2: CRUD کامل 
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using Dapper;
+
+namespace DapperCrudDemo
+{
+    class Program
+    {
+        static string connectionString = "Server=.;Database=TestDb;Trusted_Connection=True;";
+
+        static void Main(string[] args)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                // ساخت جدول (فقط یک بار نیاز هست)
+                var createTable = @"
+                    IF OBJECT_ID('Users', 'U') IS NULL
+                    CREATE TABLE Users (
+                        Id INT IDENTITY(1,1) PRIMARY KEY,
+                        Name NVARCHAR(100),
+                        Age INT
+                    );";
+                connection.Execute(createTable);
+            }
+
+            // CRUD
+            CreateUser("Ali", 25);
+            CreateUser("Sara", 30);
+
+            Console.WriteLine("📌 همه کاربران بعد از INSERT:");
+            ReadUsers();
+
+            UpdateUser(1, "Ali", 28);
+
+            Console.WriteLine("\n📌 همه کاربران بعد از UPDATE:");
+            ReadUsers();
+
+            DeleteUser(2);
+
+            Console.WriteLine("\n📌 همه کاربران بعد از DELETE:");
+            ReadUsers();
+
+            Console.ReadKey();
+        }
+
+        // CREATE
+        static void CreateUser(string name, int age)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var sql = "INSERT INTO Users (Name, Age) VALUES (@Name, @Age)";
+                connection.Execute(sql, new { Name = name, Age = age });
+            }
+        }
+
+        // READ
+        static void ReadUsers()
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var sql = "SELECT * FROM Users";
+                IEnumerable<User> users = connection.Query<User>(sql);
+
+                foreach (var user in users)
+                {
+                    Console.WriteLine($"Id: {user.Id}, Name: {user.Name}, Age: {user.Age}");
+                }
+            }
+        }
+
+        // UPDATE
+        static void UpdateUser(int id, string name, int age)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var sql = "UPDATE Users SET Name = @Name, Age = @Age WHERE Id = @Id";
+                connection.Execute(sql, new { Id = id, Name = name, Age = age });
+            }
+        }
+
+        // DELETE
+        static void DeleteUser(int id)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var sql = "DELETE FROM Users WHERE Id = @Id";
+                connection.Execute(sql, new { Id = id });
+            }
+        }
+    }
+
+    // مدل User
+    public class User
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int Age { get; set; }
+    }
+}
+
+            
