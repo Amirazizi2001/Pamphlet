@@ -1,0 +1,88 @@
+Asp.Net.JwtToken
+1.First you have the Jwt Package
+("Asp.netCore.Authentication.JwtBearer")
+
+2.Generate Token Method
+private string GenerateToken(User user)
+{
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
+        new Claim(ClaimTypes.Name,user.Email),
+        new Claim(ClaimTypes.Role,user.Role)
+    };
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var token = new JwtSecurityToken(
+        _configuration["Jwt:Issuer"],
+        _configuration["Jwt:Audience"],
+        claims,
+        expires: DateTime.UtcNow.AddHours(1),
+        signingCredentials: creds);
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+
+1.Claim:اطلاعاتی هستش که داخل توکن قرار کی گیره و بعدا ازش برای احراز هویت و تعیین سطح دسترسی استفاده می شود
+1.1_ClaimType.Name:نام کاربری   
+1.2_ClaimTypes.NameIdentifier:شناسه یکتا کاربر
+1.3_ClaimTypes.Role:نقش کاربر
+
+2.SymmetricSecurityKey:کلیدی که توکن با آن امضا می شود.این باید یک کلید محرمانه وطولانی باشد که فقط سرور شما بداند
+
+3.SigningCredentials:مشخص می کند توکن با چه الگوریتمی وچه کلیدی امضا شود
+معمول تریت الگوریتم ها:
+3.1_HmacSha256    3.2_HmacSha512
+
+4.JwtSecuritytoken:
+4.1_issuer:صادر کننده توکن
+4.2_audience:مصرف کننده توکن
+4.3_claims:اطلاعات کاربر
+4.4_expires:زمان انقضا توکن
+4.4_signingCredentials:اطلاعات امضا
+
+5.WriteToken
+این خط توکن رو به فرمت استرینگ تبدیل می کنه
+
+Program.cs
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var config = builder.Configuration;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = config["Jwt:Issuer"],
+            ValidAudience = config["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]))
+        };
+    });
+1.JwtBearerDefaults.AuthenticationScheme:یعنی ما از جی دبلیو تی برای احراز هویت استفاده می کنیم
+
+2. ValidateIssuer:اگر درست باشد سرور چک می کند آی اس اس با چیزی که خودش قبول داره یکی باشه
+
+3.ValidateAudience:توکن باید مشخص کنه واسه چه کسی صادر شده
+
+4.ValidateLifetime:بررسی تاریخ انقضای توکن
+
+5.ValidateIssuerSigningKey:کلید رمزنگاری شده ای که توکن رو تولید کرده با کلید سرور شما مطابقت داره
+
+6. IssuerSigningKey:کلید رمز نگاری شده ای که برای بررسی امضا استفاده میشه
+
+AppSettings.json
+
+"Jwt": {
+  "Key": "SuperSecretJwtKey123456!mySuperSecretKey",
+  "Issuer": "MyApi",
+  "Audience": "MyApiUser"
+}
+
+نکته مهم :کلید باید بیشتر از 16 کاراکتر باشه
+
+
+
+
+
