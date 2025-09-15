@@ -1,0 +1,127 @@
+1.CQRS : Commznd Query Responsibility Segregration
+به معنی جدا کردن مسئولیت خواندن داده ها و نوشتن/تغییر داده ها است.
+Command : عملیاتی که باعث تغییر وضعیت سیستم مس شود  (Insert,Delete,Update)
+Query: عملیاتی که فقط اطلاعات را می خوانند بدون اینکه داده ای تغییر کند
+ایده اصلی:خواندن و نوشتن دو مسیر جدا دارند.
+این باعث می شود:
+1.کد تمیز و قابل فهم تر شود
+2.تغییرات پیچیده بهتر مدیریت شوند
+3.مقیاس پذیری راحت تر باشد
+-------------------------------------------------------------------------------------------------------------------
+
+2.MediatR:Is a library that use for managing CQRS and Event-Driven.
+With MediatR,with seprate Commands and Query in Handler way and it is no need to use repository directly in controller.
+
+2-1.Install MediatR packages:
+1.MediatR   2.MediatR.Extensions.Microsoft.DependencyInjection
+-------------------------------------------------------------------------------------------------------------------
+3 command example with mediatR
+
+
+public record CreateProductCommand(string Name,decimal Price):IRequest<int>;  (3.1)
+public class CreateProductHandler : IRequestHandler<CreateProductCommand, int>   (3.2)
+{
+    private readonly IProductRepository _repository;
+    public CreateProductHandler(IProductRepository repository)
+    {
+        _repository = repository;
+    }
+    public async Task<int> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    {
+        var product = new Product()
+        {
+            Name = request.Name,
+            Price = request.Price,
+        };
+        await _repository.AddProduct(product);
+        return product.Id;
+    }
+}
+
+
+
+3.1.1_Record:it is a kind of immutable(just data) for transfer data
+3.1.2_CreateProductCommand:our command name
+3.1.3_(string Name,decimal Price):data we need for run command.
+3.1.4_IRequest<int>:when run this command return an int(here product's ID)
+-------------------------------------------------------------------------------------------------------------------
+3.2.1_CreateProductHandler:the class that handle command
+3.2.2_IRequestHandler<CreateProductCommand, int> :it says this handler will give (CreateProductCommand) and return(int)
+3.2.3_Handle:The method that implement the main logic
+3.2.4_request : that Command(with Name,Price)
+3.2.5_cancellationToken : for canceling lengthy operation
+
+4.Asking Mediatr in Controller
+
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ProductController : ControllerBase
+    {
+        private readonly IMediator _mediator;    4.1
+        public ProductController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody] CreateProductCommand command)
+        {
+            var id = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetProductbyid),new {id},null);
+   
+        }
+    }
+
+4.1_IMedatR _mediatR:this is an agent(MediatR) between Controller and Handler
+4.2_CreateProductCommand command:the body of Post request will map to Command
+4.3_mediator.Send(command): here we send the command and MediatR find the correct Handler and run it.
+4.4_CreatedAtAction():this send a standard response HTTP 201 with source address.
+
+5.Register MediatR in program.cs
+
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateProductHandler).Assembly));
+
+5.1_AddMediatR(...): we say to ASP.NET Core use MediatR
+5.2_RegisterServicesFromAssembly(...): it is automaticly register all the Commands and Handlers recognized in assembly.
+
+
+6.Query example with MediatR
+
+public record GetAllProductQuery:IRequest<IEnumerable<Product>>;
+public class GetAllProductHandler : IRequestHandler<GetAllProductQuery, IEnumerable<Product>>
+{
+    private readonly IProductRepository _repository;
+    public GetAllProductHandler(IProductRepository repository)
+    {
+        _repository = repository;
+    }
+    public async Task<IEnumerable<Product>> Handle(GetAllProductQuery request, CancellationToken cancellationToken)
+    {
+        return await _repository.GetAll();
+    }
+}
+
+
+7.Asking MediatR in Controller
+
+[Route("api/[controller]")]
+[ApiController]
+public class ProductController : ControllerBase
+{
+     private readonly IMediator _mediator;
+     public ProductController(IMediator mediator)
+      {
+         _mediator = mediator;
+      }
+      [Authorize(Roles="Admin")]
+      [HttpGet]
+      public async Task<IActionResult> GetAllProduct()
+      {
+         var products = await _mediator.Send(new GetAllProductQuery());
+         return Ok(products);
+      }
+}
+
+8.Register MediatR in Program.cs
+
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetAllProductHandler).Assembly));
+
